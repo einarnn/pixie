@@ -3,7 +3,11 @@ module github.com/einarnn/pixie
 go 1.21.0
 
 require (
-	github.com/cisco-pxgrid/cloud-sdk-go v0.5.10 // indirect
+	github.com/cisco-pxgrid/cloud-sdk-go v0.5.10
+	gopkg.in/yaml.v2 v2.4.0
+)
+
+require (
 	github.com/cisco-pxgrid/websocket v1.0.1 // indirect
 	github.com/go-resty/resty/v2 v2.7.0 // indirect
 	github.com/goccy/go-json v0.9.11 // indirect

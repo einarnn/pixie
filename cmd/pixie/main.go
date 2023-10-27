@@ -36,8 +36,8 @@ func main() {
 	config := sdk.Config{
 		ID:                        "einar-demo-app",
 		GetCredentials:            getCredentials,
-		RegionalFQDN:              "us-west-2.cloud.cisco.com",
-		GlobalFQDN:                "global.cloud.cisco.com",
+		RegionalFQDN:              "pxgridcloud.cisco.com",
+		GlobalFQDN:                "dnaservices.cisco.com",
 		DeviceActivationHandler:   activationHandler,
 		DeviceDeactivationHandler: deactivationHandler,
 		DeviceMessageHandler:      messageHandler,
