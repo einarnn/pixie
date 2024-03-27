@@ -3,16 +3,11 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"flag"
-	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
-	"time"
 
 	"github.com/cisco-pxgrid/cloud-sdk-go/log"
 	"gopkg.in/yaml.v2"
@@ -44,26 +39,19 @@ type config struct {
 }
 
 func messageHandler(id string, d *sdk.Device, stream string, p []byte) {
-	logger.Infof("Message received. tenant=%s device=%s stream=%s", d.Tenant().Name(), d.Name(), stream)
-	sendJsonToInfo("message:", p)
+	logger.Infof("Message received. tenant=%s device=%s stream=%s message=%s\n", d.Tenant().Name(), d.Name(), stream, string(p))
 }
 
 func activationHandler(d *sdk.Device) {
-	status, _ := d.Status()
-	logger.Infof("Device activation: %v", d.Name())
-	logger.Infof("  Region : %v", d.Region())
-	logger.Infof("  Tenant : %v", d.Tenant().Name())
-	logger.Infof("  Type   : %v", d.Type())
-	logger.Infof("  Status : %v", status)
+	logger.Infof("Device activation: %v", d)
 }
 
-func deActivationHandler(d *sdk.Device) {
-	status, _ := d.Status()
-	logger.Infof("Device deactivation: %v", d.Name())
-	logger.Infof("  Region : %v", d.Region())
-	logger.Infof("  Tenant : %v", d.Tenant().Name())
-	logger.Infof("  Type   : %v", d.Type())
-	logger.Infof("  Status : %v", status)
+func deactivationHandler(d *sdk.Device) {
+	logger.Infof("Device deactivation: %v", d)
+}
+
+func tenantUnlinkedHandler(t *sdk.Tenant) {
+	logger.Infof("Tenant unlinked: %v", t)
 }
 
 func loadConfig(file string) (*config, error) {
@@ -88,7 +76,6 @@ func (c *config) store(file string) error {
 }
 
 func main() {
-
 	// Load config
 	configFile := flag.String("config", "", "Configuration yaml file to use (required)")
 	debug := flag.Bool("debug", false, "Enable debug output")
@@ -120,7 +107,8 @@ func main() {
 		GlobalFQDN:                config.App.GlobalFQDN,
 		RegionalFQDN:              config.App.RegionalFQDN,
 		DeviceActivationHandler:   activationHandler,
-		DeviceDeactivationHandler: deActivationHandler,
+		DeviceDeactivationHandler: deactivationHandler,
+		TenantUnlinkedHandler:     tenantUnlinkedHandler,
 		DeviceMessageHandler:      messageHandler,
 		ReadStreamID:              config.App.ReadStream,
 		WriteStreamID:             config.App.WriteStream,
@@ -131,7 +119,6 @@ func main() {
 			Proxy: http.ProxyFromEnvironment,
 		},
 	}
-
 	// SDK App create
 	app, err := sdk.New(appConfig)
 	if err != nil {
@@ -142,8 +129,7 @@ func main() {
 	var tc = &config.Tenant
 	var tenant *sdk.Tenant
 	if tc.Otp != "" {
-
-		// **first time** need to link tenant using OTP in config file
+		// SDK link tenant with OTP
 		tenant, err = app.LinkTenant(tc.Otp)
 		if err != nil {
 			logger.Errorf("Failed to link tenant: %v", err)
@@ -154,9 +140,7 @@ func main() {
 		tc.Name = tenant.Name()
 		tc.Token = tenant.ApiToken()
 		config.store(*configFile)
-
 	} else {
-
 		// SDK set tenant with existing id, name and token
 		tenant, err = app.SetTenant(tc.ID, tc.Name, tc.Token)
 		if err != nil {
@@ -170,45 +154,6 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	// --- do other stuff ---
-
-	//but only after 5 seconds...
-	time.Sleep(time.Second * 5)
-
-	// get all devices
-	devices, err := tenant.GetDevices()
-	if err != nil {
-		logger.Errorf("Get Device: %v", err)
-		syscall.Exit(1)
-	}
-	for _, d := range devices {
-
-		// if d.Name() == "ise-3-3-proxmox" {
-		// }
-
-		logger.Infof("invoking API on device = %v", d.Name())
-
-		// req, _ := http.NewRequest(http.MethodPost, "/pxgrid/echo/query", strings.NewReader(`{"a":"b"}`))
-		req, _ := http.NewRequest(http.MethodPost, "/pxgrid/trustsec/getSecurityGroups", strings.NewReader("{}"))
-
-		// attempt to build a successful request...
-		// req, _ := http.NewRequest(http.MethodGet, "/api/v1/deployment/node", nil)
-		// req.Header.Add("Accept", "application/json")
-
-		// execute the request
-		resp, err := d.Query(req)
-		if err != nil {
-			logger.Infof("Failed to invoke %s on %s: %v", req, d, err)
-		} else {
-			bytes, _ := io.ReadAll(resp.Body)
-			msg := fmt.Sprintf("query completed: status=%s", resp.Status)
-			sendJsonToInfo(msg, bytes)
-		}
-
-	}
-
-	// --- done with other stuff ---
-
 	select {
 	case <-ctx.Done():
 		logger.Infof("Terminating...")
@@ -218,17 +163,4 @@ func main() {
 	if err = app.Close(); err != nil {
 		panic(err)
 	}
-}
-
-// Take a byte array that contains JSON, decode it, prettify it and send it
-// line-by-line to log.Infof
-func sendJsonToInfo(msg string, b []byte) {
-	var decoded interface{}
-	json.Unmarshal(b, &decoded)
-	pretty, _ := json.MarshalIndent(decoded, "", "  ")
-	logger.Infof("message=%s", msg)
-	for _, line := range strings.Split(string(pretty), "\n") {
-		logger.Infof("%s", line)
-	}
-
 }

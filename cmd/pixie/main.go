@@ -55,7 +55,7 @@ func main() {
 		if err := app.Close(); err != nil {
 			fmt.Printf("Disconnected with error: %v", err)
 		}
-	}()
+	}()	
 
 	// wait for any errors from the app instance created above
 	err = <-app.Error
