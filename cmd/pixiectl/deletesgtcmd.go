@@ -41,7 +41,12 @@ var deleteSgtCmd = &cobra.Command{
 		req.Header.Add("Accept", "application/json")
 		resp, err := foundDevice.Query(req)
 		if err != nil {
-			return fmt.Errorf("failed to get SGT: %w", err)
+			logger.Infof("failed to get SGT by name: %w", err)
+			return nil
+		}
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			logger.Infof("SGT %s not found on device %s", sgtName, deviceName)
+			return nil
 		}
 
 		var result struct {

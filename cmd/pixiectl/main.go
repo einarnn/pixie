@@ -241,6 +241,7 @@ func init() {
 
 func main() {
 	if err := rootCmd.Execute(); err != nil {
+		logger.Infof("Error: %v", err)
 		os.Exit(1)
 	}
 }

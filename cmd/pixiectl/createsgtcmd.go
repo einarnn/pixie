@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -63,15 +64,16 @@ var createSgtCmd = &cobra.Command{
 		resp, err := foundDevice.Query(req)
 		if err != nil {
 			logger.Infof("Failed to invoke %s on %s: %v", req, foundDevice.Name(), err)
+			return fmt.Errorf("failed to create SGT: %w", err)
 		} else {
-			bytes, _ := io.ReadAll(resp.Body)
-			fmt.Printf("query completed: status=%s\n", resp.Status)
-			var result any
-			if err := json.Unmarshal(bytes, &result); err != nil {
-				logger.Errorf("Failed to parse JSON: %v", err)
-			} else {
-				prettyJSON, _ := json.MarshalIndent(result, "", "  ")
-				fmt.Println(string(prettyJSON))
+			logger.Infof("query completed: status=%s\n", resp.Status)
+			if resp.StatusCode != http.StatusCreated {
+				body, _ := io.ReadAll(resp.Body)
+				var prettyBody bytes.Buffer
+				json.Indent(&prettyBody, body, "", "  ")
+				fmt.Printf("%s", prettyBody.String())
+				fmt.Println("")
+				fmt.Println("")
 			}
 		}
 		return nil
