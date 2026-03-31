@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -17,7 +18,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	sdk "github.com/cisco-pxgrid/cloud-sdk-go"
-	pixieutils "github.com/einarnn/pixie/internal/utils"
 )
 
 var logger *log.DefaultLogger = &log.DefaultLogger{Level: log.LogLevelInfo}
@@ -45,7 +45,7 @@ type config struct {
 
 func messageHandler(id string, d *sdk.Device, stream string, p []byte) {
 	logger.Infof("Message received. tenant=%s device=%s stream=%s", d.Tenant().Name(), d.Name(), stream)
-	pixieutils.SendJsonToInfo(logger, "message:", p)
+	SendJsonToInfo("message:", p)
 }
 
 func activationHandler(d *sdk.Device) {
@@ -127,7 +127,7 @@ func main() {
 		logger.Errorf("Device name is required")
 		os.Exit(-1)
 	}
-
+	
 	// SDK App config
 	getCredentials := func() (*sdk.Credentials, error) {
 		return &sdk.Credentials{
@@ -206,8 +206,8 @@ func main() {
 	logger.Infof("*** starting SDK-based API calls")
 	logger.Infof(
 		"invoking API on device = %v, %v, %v, %v",
-		foundDevice.Name(),
-		foundDevice.ID(),
+		foundDevice.Name(), 
+		foundDevice.ID(), 
 		tenant.ID(),
 		tenant.ApiToken(),
 	)
@@ -228,16 +228,16 @@ func main() {
 
 	// get SXP local bindings
 	// req, _ := http.NewRequest(
-	// 	http.MethodGet,
-	// 	"/ers/config/sxplocalbindings/eeffc5e7-75d4-4780-b393-bafb7019f3ad",
+	// 	http.MethodGet, 
+	// 	"/ers/config/sxplocalbindings/eeffc5e7-75d4-4780-b393-bafb7019f3ad", 
 	// 	nil,
 	// )
 	// req.Header.Add("Accept", "application/json")
 
 	// get deployment info
 	// req, _ := http.NewRequest(
-	// 	http.MethodGet,
-	// 	"/api/v1/deployment/node",
+	// 	http.MethodGet, 
+	// 	"/api/v1/deployment/node", 
 	// 	nil,
 	// )
 	// req.Header.Add("Accept", "application/json")
@@ -250,6 +250,7 @@ func main() {
 	// )
 	// req.Header.Add("Accept", "application/json")
 
+
 	// ** doesn't work **
 	// make an MNT request
 	// req, _ := http.NewRequest(
@@ -258,6 +259,7 @@ func main() {
 	// 	nil,
 	// )
 	// req.Header.Add("Accept", "application/xml")
+
 
 	// get deployment info
 	req, _ := http.NewRequest(
@@ -273,15 +275,16 @@ func main() {
 	} else {
 		bytes, _ := io.ReadAll(resp.Body)
 		msg := fmt.Sprintf("query completed: status=%s", resp.Status)
-		pixieutils.SendJsonToInfo(logger, msg, bytes)
+		SendJsonToInfo(msg, bytes)
 	}
 	logger.Infof("*** finished SDK-based API calls")
 
+
 	// get deployment info
 	req, _ = http.NewRequest(
-		http.MethodPost,
-		"/pxgrid/trustsec/getBindings",
-		strings.NewReader("{}"),
+			http.MethodPost,
+			"/pxgrid/trustsec/getBindings",
+			strings.NewReader("{}"),
 	)
 	req.Header.Add("Accept", "application/json")
 
@@ -291,9 +294,10 @@ func main() {
 	} else {
 		bytes, _ := io.ReadAll(resp.Body)
 		msg := fmt.Sprintf("query completed: status=%s", resp.Status)
-		pixieutils.SendJsonToInfo(logger, msg, bytes)
+		SendJsonToInfo(msg, bytes)
 	}
 	logger.Infof("*** finished SDK-based API calls")
+
 
 	// 	// and just echo forever...
 	// 	go func(device sdk.Device) {
@@ -314,9 +318,9 @@ func main() {
 
 	logger.Infof("*** calling APIs against %s", foundDevice.Name())
 	type apiCall struct {
-		api       string
-		method    string
-		body      io.Reader
+		api    string
+		method string
+		body   io.Reader
 		setHeader func(req *http.Request)
 	}
 	apisToCall := []apiCall{
@@ -377,21 +381,21 @@ func main() {
 			req.Header.Add("Content-Type", "application/json")
 			req.Header.Add("x-api-key", foundDevice.Tenant().ApiToken())
 			req.Header.Add("X-API-PROXY-COMMUNICATION-STYLE", "sync")
-		}
+		}		
 		resp, err := client.Do(req)
 		if err != nil {
 			panic(err)
 		}
 		bytes, _ := io.ReadAll(resp.Body)
 		msg := fmt.Sprintf("query completed: status=%s", resp.Status)
-		pixieutils.SendJsonToInfo(logger, msg, bytes)
+		SendJsonToInfo(msg, bytes)
 	}
 	logger.Infof("*** finished direct API calls")
 
 	// --- done with other stuff ---
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-
+	
 	select {
 	case <-ctx.Done():
 		logger.Infof("Terminating...")
@@ -403,13 +407,24 @@ func main() {
 	}
 }
 
+// Take a byte array that contains JSON, decode it, prettify it and send it
+// line-by-line to log.Infof
+func SendJsonToInfo(msg string, b []byte) {
+	var decoded interface{}
+	json.Unmarshal(b, &decoded)
+	pretty, _ := json.MarshalIndent(decoded, "", "  ")
+	logger.Infof("message=%s", msg)
+	for _, line := range strings.Split(string(pretty), "\n") {
+		logger.Infof("%s", line)
+	}
+
+}
+
 func Echo(device sdk.Device) {
 	logger.Infof("[%s] starting echo...", device.Name())
 
 	// Perform echo-query
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
+	ctx, _ := context.WithTimeout(context.Background(), time.Minute)
 	req, _ := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,

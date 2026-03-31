@@ -5,12 +5,22 @@ version: '3'
 tasks:
 
   default:
-    deps: [pixie, basic]
+    # deps: [pixiectl, basic]
+    deps: [pixiectl]
 
-  pixie:
+  pixiectl:
     cmds:
-      - go build -o bin/pixie cmd/pixie/main.go
+      - go build -o bin/{{.TASK}} ./cmd/{{.TASK}}/
       
-  basic:
+  pixiectl-run:
     cmds:
-      - go build -o bin/basic cmd/basic/main.go
+      - go run ./cmd/{{.TASK | replace "-run" ""}}/
+      
+  # basic:
+  #   cmds:
+  #     - go build -o bin/{{.TASK}} cmd/{{.TASK}}/
+
+  # basic-run:
+  #   cmds:
+  #     - go run cmd/{{.TASK | replace "-run" ""}}/
+      
