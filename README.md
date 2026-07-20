@@ -48,7 +48,7 @@ On first use, supply the `otp` field to link the tenant. After linking, `pixiect
 
 | Flag | Description |
 |------|-------------|
-| `--config <file>` | Path to the configuration YAML file (required) |
+| `--config <file>` | Path to the configuration YAML file; mutually exclusive with `--config-stdin` |
 | `--config-stdin` | Read configuration YAML from stdin; does not update the source |
 | `--debug` | Enable debug-level logging |
 | `--info` | Enable info-level logging |
@@ -62,7 +62,16 @@ go build -o pixiectl ./cmd/pixiectl/
 
 ## Commands
 
-### List SGTs
+All commands require configuration. Use either `--config <file>` or
+`--config-stdin`, but not both. The examples below use a file; for the
+container, pipe the YAML to stdin and use `--config-stdin`:
+
+```bash
+cat config.yaml | docker run --rm -i pixiectl:latest \
+  list-devices --config-stdin
+```
+
+### `get-sgts`
 
 Retrieve all SGTs from a device via the pxGrid TrustSec API.
 
@@ -76,7 +85,7 @@ pixiectl get-sgts --config config.yaml --device <device-name>
 
 Output is pretty-printed JSON.
 
-### Create SGT
+### `create-sgt`
 
 Create a new SGT on a device via the ERS API.
 
@@ -95,7 +104,7 @@ pixiectl create-sgt --config config.yaml \
 | `--description` | Description for the new SGT (required) |
 | `--tag` | Numeric SGT value, must be non-zero (required) |
 
-### Delete SGT
+### `delete-sgt`
 
 Delete an SGT by name from a device. The command first looks up the SGT ID by name, then issues a delete.
 
@@ -109,6 +118,103 @@ pixiectl delete-sgt --config config.yaml \
 |------|-------------|
 | `--device` | Target device name (required) |
 | `--name` | Name of the SGT to delete (required) |
+
+### `list-devices`
+
+Lists all devices registered for the configured tenant. The output includes
+the device name, type, and status.
+
+```bash
+pixiectl list-devices --config config.yaml
+```
+
+This command has no command-specific flags.
+
+### `get-sessions`
+
+Lists established sessions for a device through the pxGrid session API. The
+response is printed as pretty-printed JSON.
+
+```bash
+pixiectl get-sessions --config config.yaml --device <device-name>
+```
+
+| Flag | Description |
+|------|-------------|
+| `--device` | Target device name (required) |
+
+### `get-anc-policies`
+
+Lists ANC policies available through the pxGrid ANC API. The response is
+printed as pretty-printed JSON.
+
+```bash
+pixiectl get-anc-policies --config config.yaml --device <device-name>
+```
+
+| Flag | Description |
+|------|-------------|
+| `--device` | Target device name (required) |
+
+### `apply-anc-policy`
+
+Applies an ANC policy to a client identified by its MAC address.
+
+```bash
+pixiectl apply-anc-policy --config config.yaml \
+  --device <device-name> \
+  --name <policy-name> \
+  --mac <mac-address>
+```
+
+| Flag | Description |
+|------|-------------|
+| `--device` | Target device name (required) |
+| `--name` | ANC policy name (required) |
+| `--mac` | Client MAC address (required) |
+
+### `clear-anc-policy`
+
+Clears the ANC policy from a client identified by its MAC address.
+
+```bash
+pixiectl clear-anc-policy --config config.yaml \
+  --device <device-name> \
+  --mac <mac-address>
+```
+
+| Flag | Description |
+|------|-------------|
+| `--device` | Target device name (required) |
+| `--mac` | Client MAC address (required) |
+
+### `run`
+
+Connects to pxGrid Cloud for a device and waits for messages or termination.
+This is a long-running command; press `Ctrl-C` to stop it.
+
+```bash
+pixiectl run --config config.yaml --device <device-name>
+```
+
+| Flag | Description |
+|------|-------------|
+| `--device` | Target device name (required) |
+
+### Built-in commands
+
+Cobra also provides help and shell-completion commands:
+
+```bash
+pixiectl help
+pixiectl help <command>
+pixiectl completion bash
+pixiectl completion zsh
+pixiectl completion fish
+pixiectl completion powershell
+```
+
+`completion` prints shell-completion code for the selected shell.
 
 ## Examples
 
