@@ -1,0 +1,20 @@
+cmd/pixiectl/getancpolicies.go
+  h_91cc131144e513 1-57
+cmd/pixiectl/applyancpolicy.go
+  h_91cc131144e513 1-65
+cmd/pixiectl/getsessions.go
+  h_91cc131144e513 1-57
+cmd/pixiectl/main.go
+  h_91cc131144e513 235-252,258-261
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "f3c7d05dbbeddb840622f9cb7320f3a6ace05837",
+  "prompts": {},
+  "humans": {
+    "h_91cc131144e513": {
+      "author": "Einar Nilsen-Nygaard <einarnn@gmail.com>"
+    }
+  }
+}
