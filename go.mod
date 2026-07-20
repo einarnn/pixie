@@ -1,6 +1,6 @@
 module github.com/einarnn/pixie
 
-go 1.25
+go 1.26
 
 require (
 	github.com/cisco-pxgrid/cloud-sdk-go v0.5.18

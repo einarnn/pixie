@@ -15,6 +15,11 @@ tasks:
   pixiectl-run:
     cmds:
       - go run ./cmd/{{.TASK | replace "-run" ""}}/
+
+  pixiectl-image:
+    desc: Build a local pixiectl scratch image for the current architecture
+    cmds:
+      - docker build -t {{.IMAGE | default "pixiectl:latest"}} .
       
   # basic:
   #   cmds:

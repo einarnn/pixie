@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 
@@ -66,8 +67,12 @@ func loadConfig(file string) (*config, error) {
 	if err != nil {
 		return nil, err
 	}
+	return parseConfig(data)
+}
+
+func parseConfig(data []byte) (*config, error) {
 	c := config{}
-	err = yaml.Unmarshal(data, &c)
+	err := yaml.Unmarshal(data, &c)
 	if err != nil {
 		return nil, err
 	}
@@ -95,13 +100,25 @@ func findDevice(tenant *sdk.Tenant, deviceName string) (*sdk.Device, error) {
 	return nil, fmt.Errorf("device not found: %s", deviceName)
 }
 
-// initConfig reads the config file specified by the --config flag.
-func initConfig() (*config, error) {
+// initConfig reads configuration from the file specified by --config or stdin
+// when --config-stdin is set. The second return value indicates whether the
+// loaded configuration can be persisted.
+func initConfig() (*config, bool, error) {
 	configFile := viper.GetString("config")
-	if configFile == "" {
-		return nil, fmt.Errorf("config file is required (use --config)")
+	configStdin := viper.GetBool("config-stdin")
+	if (configFile == "") == !configStdin {
+		return nil, false, fmt.Errorf("exactly one of --config or --config-stdin is required")
 	}
-	return loadConfig(configFile)
+	if configStdin {
+		data, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return nil, false, fmt.Errorf("failed to read config from stdin: %w", err)
+		}
+		cfg, err := parseConfig(data)
+		return cfg, false, err
+	}
+	cfg, err := loadConfig(configFile)
+	return cfg, true, err
 }
 
 // initLogger sets up the logger based on the --debug or --info flags.
@@ -149,9 +166,12 @@ func newApp(cfg *config) (*sdk.App, error) {
 }
 
 // linkOrSetTenant either links a new tenant via OTP or sets an existing one.
-func linkOrSetTenant(app *sdk.App, cfg *config) (*sdk.Tenant, error) {
+func linkOrSetTenant(app *sdk.App, cfg *config, persist bool) (*sdk.Tenant, error) {
 	tc := &cfg.Tenant
 	if tc.Otp != "" {
+		if !persist {
+			return nil, fmt.Errorf("tenant.otp requires a writable config file; use --config instead of --config-stdin")
+		}
 		tenant, err := app.LinkTenant(tc.Otp)
 		if err != nil {
 			return nil, fmt.Errorf("failed to link tenant: %w", err)
@@ -177,7 +197,7 @@ func linkOrSetTenant(app *sdk.App, cfg *config) (*sdk.Tenant, error) {
 // and links/sets the tenant. It is the common preamble for all commands.
 func setup() (*sdk.App, *sdk.Tenant, error) {
 	initLogger()
-	cfg, err := initConfig()
+	cfg, persist, err := initConfig()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -188,7 +208,7 @@ func setup() (*sdk.App, *sdk.Tenant, error) {
 		return nil, nil, err
 	}
 
-	tenant, err := linkOrSetTenant(app, cfg)
+	tenant, err := linkOrSetTenant(app, cfg, persist)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -202,12 +222,14 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.PersistentFlags().String("config", "", "Configuration yaml file to use (required)")
+	rootCmd.PersistentFlags().String("config", "", "Configuration YAML file to use")
+	rootCmd.PersistentFlags().Bool("config-stdin", false, "Read configuration YAML from stdin (non-persistent)")
 	rootCmd.PersistentFlags().Bool("debug", false, "Enable debug output")
 	rootCmd.PersistentFlags().Bool("info", false, "Enable info output")
 	rootCmd.PersistentFlags().Bool("insecure", false, "Insecure TLS")
 
 	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
+	viper.BindPFlag("config-stdin", rootCmd.PersistentFlags().Lookup("config-stdin"))
 	viper.BindPFlag("info", rootCmd.PersistentFlags().Lookup("info"))
 	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
 	viper.BindPFlag("insecure", rootCmd.PersistentFlags().Lookup("insecure"))

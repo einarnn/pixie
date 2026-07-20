@@ -2,6 +2,26 @@
 
 CLI tool for managing pxGrid Cloud devices and TrustSec Security Group Tags (SGTs).
 
+## Running the container
+
+Build the local-architecture image with Task:
+
+```bash
+task pixiectl-image
+```
+
+The container reads its YAML configuration from stdin. For example:
+
+```bash
+cat config.yaml | docker run --rm -i \
+  pixiectl:latest \
+  get-sgts \
+  --config-stdin \
+  --device my-ise-node
+```
+
+The `--config-stdin` option does not write the configuration back to disk. Use a config containing an already-linked tenant (`id`, `name`, and `token`); initial OTP linking requires the writable file-based `--config` option.
+
 ## Prerequisites
 
 A YAML configuration file is required for all commands. It contains app credentials and tenant information:
@@ -29,6 +49,7 @@ On first use, supply the `otp` field to link the tenant. After linking, `pixiect
 | Flag | Description |
 |------|-------------|
 | `--config <file>` | Path to the configuration YAML file (required) |
+| `--config-stdin` | Read configuration YAML from stdin; does not update the source |
 | `--debug` | Enable debug-level logging |
 | `--info` | Enable info-level logging |
 | `--insecure` | Skip TLS certificate verification |

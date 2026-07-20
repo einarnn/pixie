@@ -1,0 +1,6 @@
+.git
+.gocache
+.vscode
+pixiectl
+config*.yaml
+hareshaw/
