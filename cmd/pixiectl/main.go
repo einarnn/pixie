@@ -130,7 +130,7 @@ func newApp(cfg *config) (*sdk.App, error) {
 		RegionalFQDN:              cfg.App.RegionalFQDN,
 		DeviceActivationHandler:   activationHandler,
 		DeviceDeactivationHandler: deActivationHandler,
-		DeviceMessageHandler:      messageHandler,
+		DeviceMessageHandler:      nil, //messageHandler,
 		ReadStreamID:              cfg.App.ReadStream,
 		WriteStreamID:             cfg.App.WriteStream,
 		Transport: &http.Transport{
@@ -232,11 +232,33 @@ func init() {
 	viper.BindPFlag("delete-sgt.device", deleteSgtCmd.Flags().Lookup("device"))
 	viper.BindPFlag("delete-sgt.name", deleteSgtCmd.Flags().Lookup("name"))
 
+	getSessionsCmd.Flags().String("device", "", "Device name")
+	viper.BindPFlag("get-sessions.device", getSessionsCmd.Flags().Lookup("device"))
+
+	getAncPoliciesCmd.Flags().String("device", "", "Device name")
+	viper.BindPFlag("get-anc-policies.device", getAncPoliciesCmd.Flags().Lookup("device"))
+
+	applyAncPolicyCmd.Flags().String("device", "", "Device name")
+	viper.BindPFlag("apply-anc-policy.device", applyAncPolicyCmd.Flags().Lookup("device"))
+	applyAncPolicyCmd.Flags().String("name", "", "ANC policy name")
+	applyAncPolicyCmd.Flags().String("mac", "", "MAC address")
+	viper.BindPFlag("apply-anc-policy.name", applyAncPolicyCmd.Flags().Lookup("name"))
+	viper.BindPFlag("apply-anc-policy.mac", applyAncPolicyCmd.Flags().Lookup("mac"))
+
+	clearAncPolicyCmd.Flags().String("device", "", "Device name")
+	viper.BindPFlag("clear-anc-policy.device", clearAncPolicyCmd.Flags().Lookup("device"))
+	clearAncPolicyCmd.Flags().String("mac", "", "MAC address")
+	viper.BindPFlag("clear-anc-policy.mac", clearAncPolicyCmd.Flags().Lookup("mac"))
+
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(listDevicesCmd)
 	rootCmd.AddCommand(getSgtsCmd)
 	rootCmd.AddCommand(createSgtCmd)
 	rootCmd.AddCommand(deleteSgtCmd)
+	rootCmd.AddCommand(getSessionsCmd)
+	rootCmd.AddCommand(getAncPoliciesCmd)
+	rootCmd.AddCommand(applyAncPolicyCmd)
+	rootCmd.AddCommand(clearAncPolicyCmd)
 }
 
 func main() {
