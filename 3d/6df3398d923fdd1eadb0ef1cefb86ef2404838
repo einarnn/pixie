@@ -1,0 +1,39 @@
+cmd/pixiectl/main.go
+  s_cc430168bee583::t_b79f796a6c715f 225
+  s_cc430168bee583::t_a5694c1e9d2656 6,70-73,75,103-106,108-118,120-121,169,172-174,200,211,226,232
+README.md
+  s_cc430168bee583::t_4c91c01c579cfc 5-24
+  s_cc430168bee583::t_3af047acf79649 52
+.dockerignore
+  s_cc430168bee583::t_b79f796a6c715f 1-6
+go.mod
+  h_91cc131144e513 3
+Taskfile.yaml
+  s_cc430168bee583::t_a5694c1e9d2656 18-21
+  s_cc430168bee583::t_49b2e6f25b6042 22
+Dockerfile
+  s_cc430168bee583::t_49b2e6f25b6042 7
+  h_91cc131144e513 1,11-12
+  s_cc430168bee583::t_a5694c1e9d2656 2-6,8-10,13-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "3d6df3398d923fdd1eadb0ef1cefb86ef2404838",
+  "prompts": {},
+  "humans": {
+    "h_91cc131144e513": {
+      "author": "Einar Nilsen-Nygaard <einarnn@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_cc430168bee583": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f8109-59f7-7fc3-90d6-147cb5af167d",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "Einar Nilsen-Nygaard <einarnn@gmail.com>"
+    }
+  }
+}
